@@ -1,0 +1,56 @@
+v29:
+  path: 'save/halo_model-epoch=00-val_loss=0.000-step=37359-n48_12x12-v2.ckpt'
+  model:
+      n_positions: 48
+      n_ctx: 48
+      n_embd: 768
+      n_layer: 12
+      n_head: 12
+n48_v24:
+  path: 'save/halo_model-epoch=49-val_loss=0.000-step=1867950-n48.ckpt'
+  model:
+      n_positions: 48
+      n_ctx: 48
+      n_embd: 384
+      n_layer: 6
+      n_head: 6
+original: 
+  path: 'save/halo_model-epoch=34-val_loss=0.0002-step=1307565-original.ckpt'
+  model:
+      n_positions: 100
+      n_ctx: 100
+      n_embd: 384
+      n_layer: 6
+      n_head: 6
+old:
+  path: 'save/halo_model-epoch=20-val_loss=0.000_128_flash_swig.ckpt'
+  model:
+      n_positions: 100
+      n_ctx: 64
+      n_embd: 384
+      n_layer: 6
+      n_head: 6
+n48_epoch16:
+  path: 'save/halo_model-epoch=16-val_loss=0.000-step=635103-n48.ckpt'
+  model:
+      n_positions: 48
+      n_ctx: 48
+      n_embd: 384
+      n_layer: 6
+      n_head: 6
+original_epoch0:
+  path: 'save/halo_model-epoch=00-val_loss=0.0003-step=37359-original.ckpt'
+  model:
+      n_positions: 100
+      n_ctx: 100
+      n_embd: 384
+      n_layer: 6
+      n_head: 6
+original_epoch34:
+  path: 'save/halo_model-epoch=34-val_loss=0.0002-step=1307565-original.ckpt'
+  model:
+      n_positions: 100
+      n_ctx: 100
+      n_embd: 384
+      n_layer: 6
+      n_head: 6

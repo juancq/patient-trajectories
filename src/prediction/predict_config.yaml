@@ -1,0 +1,15 @@
+seed: 123
+stratified: True
+n_splits: 5
+test_size: 30000
+windows: 
+  - six_months
+  - one_year
+  - two_year
+tasks:
+  - length_of_stay
+  - episode_count
+  - cost
+#result_fout_format: '{window}_results_binary_{high}_strat_debug.csv'
+result_fout_format: '{task}_results_binary_{high}_split5_10k_strong_baseline_ft_test.csv'
+run_label: 'aligned'
