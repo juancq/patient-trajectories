@@ -41,7 +41,18 @@ from evaluation.metrics import calculate_metrics
 streaming_flag = False
 
 
-def evaluate_subsets(subset_data, y_test, y_pred, test_index, scores):
+def evaluate_subsets(subset_data: dict[str, np.ndarray], y_test: np.ndarray, y_pred: np.ndarray, 
+                  test_index: np.ndarray, scores: dict[str, dict[str, list[float]]]) -> None:
+    """Evaluate model predictions on different demographic subsets of the test data.
+    
+    Args:
+        subset_data: Dictionary mapping subset names to boolean masks indicating which samples belong to each subset
+        y_test: Ground truth binary labels for the test set
+        y_pred: Model's predicted probabilities for the test set 
+        test_index: Boolean mask or integer indices indicating which samples are in the test set
+        scores: Nested dictionary to store evaluation metrics for each subset. Outer keys are subset names,
+               inner keys are metric names, values are lists to store metrics across folds.
+    """
     for subset_name, subset_mask in subset_data.items():
         subset_y_pred = y_pred[subset_mask[test_index]]
         subset_y_test = y_test[subset_mask[test_index]]
@@ -55,31 +66,40 @@ def evaluate_subsets(subset_data, y_test, y_pred, test_index, scores):
 
 def eval_cv_model(
     models: List[Tuple[str, Type[RegressorMixin|ClassifierMixin], Dict[str, Any]]],
-    X: ArrayLike,
-    y: ArrayLike,
-    fold_indices: List[Tuple[ArrayLike,ArrayLike]],
+    X: np.ndarray,
+    y: np.ndarray,
+    fold_indices: List[Tuple[np.ndarray, np.ndarray]],
     window: str,
     feature_set: str,
     label: str = 'label',
-    subset_data: Dict[str, ArrayLike] = None,
-) -> Dict[str, Any]:
-    """
-    Evaluate a list of models in a cross-validation setting.
+    subset_data: Optional[Dict[str, np.ndarray]] = None,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Evaluate multiple classification models using k-fold cross-validation and calculate performance metrics.
+    
+    This function trains and evaluates models on each fold, saves the trained models and their predictions,
+    and calculates various performance metrics (AUC, AP, etc.) both on the full test set and on demographic subsets.
 
-    Parameters
-    ----------
-    models : List[Tuple[str, Type[RegressorMixin], Dict[str, Any]]]
-        A list of tuples containing the model name, class, and keyword arguments.
-    X : ArrayLike
-        The feature array.
-    y : ArrayLike
-        The target array.
-    split : BaseCrossValidator
-        The cross-validation object.
-    feature_set : str
-        The name of the feature set.
-    label : str, optional
-        The label for the task, by default 'label'.
+    Args:
+        models: List of tuples, each containing:
+            - model name (str)
+            - model class (scikit-learn classifier type)
+            - model initialization kwargs (dict)
+        X: Feature matrix of shape (n_samples, n_features)
+        y: Target labels of shape (n_samples,)
+        fold_indices: List of (train_idx, test_idx) tuples for cross-validation
+        window: Time window identifier used for organizing saved models
+        feature_set: Name of the feature set being used
+        label: Name of the prediction task/target variable
+        subset_data: Optional dictionary mapping subset names to boolean masks for demographic subgroups
+
+    Returns:
+        Dictionary containing:
+            - 'metrics': List of dictionaries, each with performance metrics for one subset/model combination
+              including mean and std of metrics across folds
+
+    The function saves the following files for each fold:
+        - Trained model: {window}/fold_{i}/{feature_set}_{model_name}.joblib
+        - Predictions: {window}/fold_{i}/{feature_set}_{model_name}_predictions.csv
     """
     cv_start = time.time()
     result = []
@@ -192,16 +212,35 @@ def eval_model_train_test(model, x_train, y_train, x_test, y_test):
             
 
 
-def add_diagnosis_codes(df):
-    # convert all procedure codes to counts/dummy variables
-    print(df.height)
+def add_diagnosis_codes(df: pl.DataFrame) -> pl.DataFrame:
+    """Convert diagnosis history lists into feature columns with counts.
+    
+    This function processes the diagnosis_history column which contains lists of diagnosis codes
+    (e.g., ['A01.0', 'B02']) and converts them into feature columns. For each unique diagnosis code
+    prefix (before the dot), it creates a count-based feature column with the prefix 'feature_diagnosis_'.
+    
+    Args:
+        df: Input DataFrame containing 'ppn_int' and 'diagnosis_history' columns, where
+            diagnosis_history is a list column containing diagnosis codes
+            
+    Returns:
+        DataFrame with the original columns plus additional feature columns for each
+        unique diagnosis code prefix, named as 'feature_diagnosis_X' where X is the
+        code prefix. Missing values are filled with 0.
+        
+    Example:
+        Input df with diagnosis_history=['A01.0', 'B02'] will create columns like
+        'feature_diagnosis_A01' and 'feature_diagnosis_B02' with their respective counts.
+    """
+    # Step 1: Extract patient IDs and diagnosis history
     df_codes = df.select(pl.col(['ppn_int', 'diagnosis_history'])).lazy()
 
-    #df_codes = df_codes.with_columns(pl.col('diagnosis_history').str.split('.').list.get(0).alias('diagnosis_history'))
+    # Step 2: Extract diagnosis code prefixes (before the dot) from each code in the list
     df_codes = df_codes.with_columns(
         pl.col('diagnosis_history').list.eval(pl.element().str.split('.').list.get(0))
     )
 
+    # Step 3: Convert list column to long format and count occurrences
     df_codes = df_codes.explode('diagnosis_history')
     df_codes = df_codes.group_by(['ppn_int', 'diagnosis_history']).agg(
         value=pl.len()
@@ -209,20 +248,15 @@ def add_diagnosis_codes(df):
 
     df_codes = df_codes.collect(streaming=streaming_flag)
 
-    print(df_codes.head(20))
+    # Step 4: Convert to wide format with diagnosis codes as columns
     df_codes = df_codes.pivot(on="diagnosis_history", index='ppn_int', values='value')
-    print(df_codes.head(20))
     df_codes = df_codes.select(pl.all().shrink_dtype())
     # add "diagnosis" prefix to all diagnosis columns
     df_codes = df_codes.select(pl.col('ppn_int'), cs.exclude('ppn_int').name.prefix('feature_diagnosis_'))
-    print(df_codes.head(20))
-    print(df_codes.height)
 
-    # add procedure code to other baseline variables
+    # Step 5: Add diagnosis codes to other baseline variables
     df = df.join(df_codes, on='ppn_int', coalesce=True, how='left')
     df = df.with_columns(cs.starts_with('feature_diagnosis').fill_null(0))
-    print(df.head(20))
-    print(df.height)
     return df
 
 
@@ -269,7 +303,32 @@ def get_models():
         #('Dummy', DummyClassifier, default_kwargs),
     ]
 
-def process_embeddings(embed_path, window, label_ids):
+def process_embeddings(
+    embed_path: Dict[str, Union[str, Path]], 
+    window: str, 
+    label_ids: pl.LazyFrame
+) -> Dict[str, pl.DataFrame]:
+    """Load and process embeddings from multiple files, joining them with label IDs.
+    
+    Args:
+        embed_path: Dictionary mapping embedding names to their file paths.
+            Paths may contain {window} placeholder for formatting.
+        window: Time window identifier to format the embedding file paths.
+        label_ids: LazyFrame containing patient IDs (ppn_int) to join with.
+            Used to filter embeddings to only those patients with labels.
+    
+    Returns:
+        Dictionary mapping embedding names to their processed DataFrames.
+        Each DataFrame contains:
+        - Original embedding features
+        - Joined with label_ids on ppn_int
+        - Sorted by ppn_int
+        - Collected into memory if streaming_flag is True
+        
+    Logs:
+        - When each embedding is being collected
+        - Statistics about unique IDs and total length after joining
+    """
     embedding_set = {}
     for embed_name, path_to_embedding in embed_path.items():
         fname = Path(str(path_to_embedding).format(window=window))
@@ -287,10 +346,38 @@ def process_embeddings(embed_path, window, label_ids):
     return embedding_set
 
 
-def perform_cross_validation(embedding_set, task, fold_indices, 
-    models, config, window,
-    subset_data: Dict[str, ArrayLike] = None
-    ):
+def perform_cross_validation(
+    embedding_set: Dict[str, pl.DataFrame],
+    task: str,
+    fold_indices: List[Tuple[np.ndarray, np.ndarray]],
+    models: List[Tuple[str, Type[ClassifierMixin], Dict[str, Any]]],
+    config: Box,
+    window: str,
+    subset_data: Optional[Dict[str, np.ndarray]] = None
+) -> List[Dict[str, Any]]:
+    """Perform cross-validation evaluation of models on different embedding types.
+
+    For each type of embedding (e.g., baseline features, HALO embeddings), this function:
+    1. Selects appropriate models (excludes dummy classifier for non-baseline features)
+    2. Extracts features and target variable
+    3. Performs cross-validation using eval_cv_model
+    4. Collects and combines results across all embedding types
+
+    Args:
+        embedding_set: Dictionary mapping embedding names to DataFrames containing
+            the features (columns starting with 'feature_') and target variable
+        task: Name of the target variable column in the DataFrames
+        fold_indices: List of (train_indices, test_indices) for cross-validation
+        models: List of tuples containing (model_name, model_class, model_params)
+        config: Configuration object containing run parameters
+        window: Time window identifier for the current evaluation
+        subset_data: Optional dictionary mapping subset names to boolean masks
+            for evaluating model performance on different demographic subgroups
+
+    Returns:
+        List of dictionaries containing evaluation metrics for each combination
+        of embedding type, model, and demographic subset
+    """
     result = []
     for embedding_name, embedding in embedding_set.items():
         models_to_eval = models
@@ -298,28 +385,21 @@ def perform_cross_validation(embedding_set, task, fold_indices,
         if 'baseline' not in embedding_name:
             # only run dummy classifier for baseline, as dummy classifier does not look at input features
             models_to_eval = [m for m in models_to_eval if 'dummy' not in m[0].lower()]
-            #continue
 
-        print(f'{embedding_name} features', embedding.shape)
-        logger.info(f'{embedding_name}')
-        print(f'{embedding_name} features', embedding.select(cs.starts_with('feature')).shape)
-
-        print(f'{embedding_name} features', x.shape)
-        logger.info(f'{embedding_name}')
+        logger.info(f'Processing {embedding_name} embeddings')
+        # Extract features (columns starting with 'feature_')
+        x = embedding.select(cs.starts_with('feature_')).to_numpy()
         y = embedding.get_column(task).to_numpy().ravel()
 
         embed_model_result = eval_cv_model(
             models_to_eval, 
             x, y, fold_indices, 
             window,
-           feature_set=embedding_name, label=task,
-           subset_data=subset_data
+            feature_set=embedding_name, 
+            label=task,
+            subset_data=subset_data
         )
         result.extend(embed_model_result['metrics'])
-
-    #plt.grid(True)
-    #plot_name = f'plots/{task}_{window}_calibration_{config.run_label}.png'
-    #plt.savefig(plot_name, bbox_inches='tight')
 
     return result
 
