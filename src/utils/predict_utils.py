@@ -8,22 +8,23 @@ from typing import Dict
 from loguru import logger
 
 
-def threshold_label(df, task, high):
-    threshold = df.select(pl.col(task).quantile(.90)).item()
+def threshold_label(df, task, high, threshold=None):
+    if threshold is None:
+        threshold = df.select(pl.col(task).quantile(.90)).item()
     df = df.with_columns(pl.col(task).name.suffix('_raw'))
     if task == 'cost':
         df = df.with_columns(
-            (pl.col(task) >= threshold).alias(task)
+            (pl.col(task) > threshold).alias(task)
         )
     elif high:
         df = df.with_columns(
-            (pl.col(task) >= threshold).alias(task)
+            (pl.col(task) > threshold).alias(task)
         )
     else:
         df = df.with_columns(
             (pl.col(task) > 0).alias(task)
         )
-    return df
+    return df, threshold
 
 
 def load_config(config_file='predict_config.yaml') -> Box:
@@ -89,10 +90,7 @@ def save_results(results, task, high, config, temp=None):
         #name, ext = fout.rsplit(".", 1)
         #fout = f"{name}_{timestamp}.{ext}"
 
-        sort_by = ['window']
-        if 'subset' in results.columns:
-            sort_by.append('subset')
-        results_df_all = results.sort_values(by=sort_by)
+        results_df_all = results.sort_values(by=['window','subset'])
         results_df_all.to_csv(fout)
 
 
