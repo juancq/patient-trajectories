@@ -98,11 +98,11 @@ def eval_cv_model(
             fold_start = time.time()
             x_train, x_test = X[train_index], X[test_index]
             y_train, y_test = y[train_index], y[test_index]
-            #model = model_cls()
-            model = Pipeline([
-                ('scaler', StandardScaler()),
-                ('model', model_cls()),
-            ])
+            model = model_cls()
+            #model = Pipeline([
+            #    ('scaler', StandardScaler()),
+            #    ('model', model_cls()),
+            #])
             # use this to reduce validation overhead
             with sklearnex_config_context():#target_offload="gpu:0"):
                 with sklearn.config_context(assume_finite=True):
@@ -191,53 +191,23 @@ def eval_model_train_test(model, x_train, y_train, x_test, y_test):
     logger.info(f"AP: {metrics['ap']:.3f}")
             
 
-def add_diagnosis_codes(df, filter_codes=None):
+
+def add_diagnosis_codes(df):
     # convert all procedure codes to counts/dummy variables
     print(df.height)
     df_codes = df.select(pl.col(['ppn_int', 'diagnosis_history'])).lazy()
-    #icd_codes = df_codes.select('diagnosis_history').explode('diagnosis_history').unique().collect().get_column('diagnosis_history').to_list()
-    #print(len(icd_codes))
-    #sys.exit()
-    df_codes = df_codes.explode('diagnosis_history')
-    print(df_codes)
-    code_counts = df_codes.select(pl.col('diagnosis_history').value_counts()).collect().unnest('diagnosis_history')
-    if filter_codes is not None:
-        code_counts = code_counts.filter(pl.col('count') > filter_codes)
-        code_counts = code_counts.filter(pl.col('diagnosis_history').is_not_null())
-        df_codes = df_codes.filter(pl.col('diagnosis_history').is_in(code_counts.get_column('diagnosis_history').unique()))
-    #print(len(code_counts))
-    #print(len(code_counts))
-    #import code
-    #code.interact(local=locals())
-
-    #icd_codes = df_codes.select('diagnosis_history').explode('diagnosis_history').unique().collect().get_column('diagnosis_history').to_list()
-    #icd_codes.remove(None)
-    ##print(icd_codes)
-    #agg_expr = [
-    #    pl.col('diagnosis_history').list.contains(h).cast(pl.Int64).sum().alias(h) for h in icd_codes
-    #]
-    #df_codes = df_codes.group_by(['ppn_int']).agg(agg_expr)
-    #df_codes = df_codes.collect(streaming=streaming_flag)
-
-    #print(df_codes.head(20))
-    #sys.exit()
 
     #df_codes = df_codes.with_columns(pl.col('diagnosis_history').str.split('.').list.get(0).alias('diagnosis_history'))
-    #df_codes = df_codes.with_columns(pl.col('diagnosis_history').str.extract(r"([^.]+\.\d|^[^.]+)").alias('diagnosis_history'))
-    # to get diagnosis counts in lookback history
+    df_codes = df_codes.with_columns(
+        pl.col('diagnosis_history').list.eval(pl.element().str.split('.').list.get(0))
+    )
+
+    df_codes = df_codes.explode('diagnosis_history')
     df_codes = df_codes.group_by(['ppn_int', 'diagnosis_history']).agg(
         value=pl.len()
-    )#.collect(streaming=streaming_flag)
-    #print(df_codes.select(pl.len()).collect())
-    #print(df_codes.head(20).collect())
+    )
 
-    #print(df_codes.head(20).collect())
-    #print(df_codes.select(pl.len()).collect())
-    #sys.exit()
     df_codes = df_codes.collect(streaming=streaming_flag)
-
-    # diagnosis dummy variable (yes/no in lookback history)
-   # df_codes = df_codes.with_columns(value=pl.lit(1)).collect(streaming=streaming_flag)
 
     print(df_codes.head(20))
     df_codes = df_codes.pivot(on="diagnosis_history", index='ppn_int', values='value')
@@ -282,7 +252,8 @@ def get_embeddings(fname: str) -> pl.DataFrame:
 
 def get_models():
     default_kwargs = {}
-    lr_params = {'solver':'saga', 'max_iter':100, 'tol': 1e-3}
+    #lr_params = {'solver':'saga', 'max_iter':100, 'tol': 1e-3}
+    lr_params = {'solver':'saga', 'max_iter':150, 'tol': 1e-3}
     gbt_params = {
         'learning_rate': 0.05,
         'n_estimators': 100,
@@ -292,10 +263,10 @@ def get_models():
         'max_depth': 10,
     }
     return [
-        ('LR', lambda: LogisticRegression(**lr_params), default_kwargs),
+        #('LR', lambda: LogisticRegression(**lr_params), default_kwargs),
+        #('ElasticNet', lambda: LogisticRegression(penalty='elasticnet', l1_ratio=0.5, **lr_params), default_kwargs),
         ('lgbm', lambda: LGBMClassifier(**gbt_params), default_kwargs),
-        ('ElasticNet', lambda: LogisticRegression(penalty='elasticnet', l1_ratio=0.5, **lr_params), default_kwargs),
-        ('Dummy', DummyClassifier, default_kwargs),
+        #('Dummy', DummyClassifier, default_kwargs),
     ]
 
 def process_embeddings(embed_path, window, label_ids):
@@ -329,11 +300,9 @@ def perform_cross_validation(embedding_set, task, fold_indices,
             models_to_eval = [m for m in models_to_eval if 'dummy' not in m[0].lower()]
             #continue
 
-        x = embedding.select(cs.starts_with('feature'))
-        if embedding_name == 'baseline':
-            # for standard baseline, do not include new variables
-            x = x.select(cs.exclude(cs.starts_with('feature_new')))
-        x = x.to_numpy()
+        print(f'{embedding_name} features', embedding.shape)
+        logger.info(f'{embedding_name}')
+        print(f'{embedding_name} features', embedding.select(cs.starts_with('feature')).shape)
 
         print(f'{embedding_name} features', x.shape)
         logger.info(f'{embedding_name}')
@@ -370,7 +339,7 @@ def main():
     parser.add_argument('--high', help='predict 90% percentile', default=True, action='store_true')
     args = parser.parse_args()
 
-    config = ut.load_config('config/predict_config.yaml')
+    config = ut.load_config()
 
     w_temp = 'two_year'
     if os.name == 'nt':
@@ -459,7 +428,7 @@ def main():
             embedding_set['baseline'] = df_baseline_window
 
             # convert task to binary
-            df_label = ut.threshold_label(df_label, task, args.high)
+            df_label, _ = ut.threshold_label(df_label, task, args.high)
             df_label = df_label.sort('ppn_int')
             print('number of labels', df_label)
 
