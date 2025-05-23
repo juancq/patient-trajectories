@@ -5,7 +5,7 @@ get_halo_embeddings:
 	python -m halo.get_embeddings
 
 predict:
-	python -m prediction.predict_binary_outcomes_aligned
+	python -m downstream_prediction.predict_binary_outcomes_aligned
 
 fine_tune:
 	python -m halo.final_fine_tune

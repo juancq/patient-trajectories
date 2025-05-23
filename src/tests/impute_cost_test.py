@@ -19,7 +19,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 # Assuming impute_cost.py is in the same directory
-from prediction.impute_cost import (
+from downstream_prediction.impute_cost import (
     group_other_categories,
     preprocess_data,
     get_cpi,
@@ -32,7 +32,7 @@ from prediction.impute_cost import (
 # import os
 # import sys
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# from prediction.impute_cost import ...
+# from downstream_prediction.impute_cost import ...
 
 class TestImputeCost(unittest.TestCase):
 
@@ -88,8 +88,8 @@ class TestImputeCost(unittest.TestCase):
             self.assertIsInstance(result, pl.LazyFrame)
             self.assertEqual(result.collect().shape, (3, 2))
 
-    @patch('prediction.impute_cost.get_cost_data')
-    @patch('prediction.impute_cost.impute_data')
+    @patch('downstream_prediction.impute_cost.get_cost_data')
+    @patch('downstream_prediction.impute_cost.impute_data')
     def test_apdc_eddc_impute(self, mock_impute_data, mock_get_cost_data):
         mock_get_cost_data.return_value = pl.DataFrame({
             'apdc_project_recnum': ['A1', 'A2', 'A3'],

@@ -19,8 +19,8 @@ from box import Box
 from evaluation.metrics import (calculate_metrics, d_calibration,
                                 specificity_score)
 import utils.predict_utils as ut
-import prediction.predict_binary_outcomes_aligned as main
-from prediction.predict_binary_outcomes_aligned import (add_diagnosis_codes, eval_cv_model, eval_model_train_test,
+import downstream_prediction.predict_binary_outcomes_aligned as main
+from downstream_prediction.predict_binary_outcomes_aligned import (add_diagnosis_codes, eval_cv_model, eval_model_train_test,
                   evaluate_subsets, get_embeddings, get_models,
                   perform_cross_validation, process_embeddings)
 
@@ -41,18 +41,18 @@ class TestMain(unittest.TestCase):
             'run_label': 'test_run',
         })
         self.mock_args = MagicMock(no_cv=False, high=True)
-        self.patch_load_config = patch('prediction.predict_binary_outcomes_aligned.ut.load_config', return_value=self.mock_config)
-        self.patch_argparse = patch('prediction.predict_binary_outcomes_aligned.argparse.ArgumentParser')
-        self.patch_logger_info = patch('prediction.predict_binary_outcomes_aligned.logger.info')
-        self.patch_joblib_dump = patch('prediction.predict_binary_outcomes_aligned.joblib.dump')
+        self.patch_load_config = patch('downstream_prediction.predict_binary_outcomes_aligned.ut.load_config', return_value=self.mock_config)
+        self.patch_argparse = patch('downstream_prediction.predict_binary_outcomes_aligned.argparse.ArgumentParser')
+        self.patch_logger_info = patch('downstream_prediction.predict_binary_outcomes_aligned.logger.info')
+        self.patch_joblib_dump = patch('downstream_prediction.predict_binary_outcomes_aligned.joblib.dump')
         self.patch_pd_to_csv = patch('pandas.DataFrame.to_csv')
-        self.patch_calculate_metrics = patch('prediction.predict_binary_outcomes_aligned.calculate_metrics', return_value={'auc': 0.8})
-        self.patch_calibration_display = patch('prediction.predict_binary_outcomes_aligned.CalibrationDisplay.from_predictions')
-        self.patch_plt_savefig = patch('prediction.predict_binary_outcomes_aligned.plt.savefig')
-        self.patch_conditional_set_memory_limit = patch('prediction.predict_binary_outcomes_aligned.conditional_set_memory_limit', lambda x: lambda f: f)
+        self.patch_calculate_metrics = patch('downstream_prediction.predict_binary_outcomes_aligned.calculate_metrics', return_value={'auc': 0.8})
+        self.patch_calibration_display = patch('downstream_prediction.predict_binary_outcomes_aligned.CalibrationDisplay.from_predictions')
+        self.patch_plt_savefig = patch('downstream_prediction.predict_binary_outcomes_aligned.plt.savefig')
+        self.patch_conditional_set_memory_limit = patch('downstream_prediction.predict_binary_outcomes_aligned.conditional_set_memory_limit', lambda x: lambda f: f)
 
-        self.mock_config_context = patch('prediction.predict_binary_outcomes_aligned.sklearn.config_context')
-        self.mock_sklearnex_config_context = patch('prediction.predict_binary_outcomes_aligned.sklearnex_config_context')
+        self.mock_config_context = patch('downstream_prediction.predict_binary_outcomes_aligned.sklearn.config_context')
+        self.mock_sklearnex_config_context = patch('downstream_prediction.predict_binary_outcomes_aligned.sklearnex_config_context')
 
         self.mock_sklearnex_config_context.start()
         self.mock_config_context.start()
@@ -80,11 +80,11 @@ class TestMain(unittest.TestCase):
         self.patch_plt_savefig.stop()
         self.patch_conditional_set_memory_limit.stop()
 
-    @patch('prediction.predict_binary_outcomes_aligned.StandardScaler')
-    @patch('prediction.predict_binary_outcomes_aligned.Pipeline')
-    @patch('prediction.predict_binary_outcomes_aligned.joblib.dump')
+    @patch('downstream_prediction.predict_binary_outcomes_aligned.StandardScaler')
+    @patch('downstream_prediction.predict_binary_outcomes_aligned.Pipeline')
+    @patch('downstream_prediction.predict_binary_outcomes_aligned.joblib.dump')
     @patch('pandas.DataFrame.to_csv')
-    @patch('prediction.predict_binary_outcomes_aligned.calculate_metrics', return_value={'auc': 0.8})
+    @patch('downstream_prediction.predict_binary_outcomes_aligned.calculate_metrics', return_value={'auc': 0.8})
     def test_eval_cv_model(self, mock_calculate_metrics, mock_to_csv, mock_joblib_dump, MockPipeline, MockStandardScaler):
         models = [('LR', LogisticRegression, {})]
         X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
@@ -139,7 +139,7 @@ class TestMain(unittest.TestCase):
         self.assertIn('ElasticNet', model_names)
         self.assertIn('Dummy', model_names)
 
-    @patch('prediction.predict_binary_outcomes_aligned.eval_cv_model')
+    @patch('downstream_prediction.predict_binary_outcomes_aligned.eval_cv_model')
     def test_perform_cross_validation(self, mock_eval_cv_model):
         embedding_set = {
             'baseline_diagnosis': pl.DataFrame({

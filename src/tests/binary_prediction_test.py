@@ -3,7 +3,7 @@ import os
 #sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
 
-from prediction.predict_binary_outcomes import get_embeddings
+from downstream_prediction.predict_binary_outcomes import get_embeddings
 
 
 def test_get_embeddings_success():

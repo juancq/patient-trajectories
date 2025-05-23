@@ -16,7 +16,7 @@ from evaluation.metrics import calculate_metrics, d_calibration, specificity_sco
 import utils.predict_utils as ut
 
 # Import the main script - assuming this is in a tests/ directory
-import prediction.predict_binary_outcomes_aligned as pred
+import downstream_prediction.predict_binary_outcomes_aligned as pred
 
 class TestPredictBinaryOutcomes(unittest.TestCase):
     def setUp(self):
@@ -65,7 +65,7 @@ class TestPredictBinaryOutcomes(unittest.TestCase):
         scores = {'subset1': {m: [] for m in ['auc', 'ap', 'accuracy', 'recall', 'specificity', 'brier', 'dcal', 'dcal_pvalue']}}
         
         # Create a patch for calculate_metrics
-        with patch('prediction.predict_binary_outcomes_aligned.calculate_metrics') as mock_metrics:
+        with patch('downstream_prediction.predict_binary_outcomes_aligned.calculate_metrics') as mock_metrics:
             mock_metrics.return_value = {'auc': 0.8, 'ap': 0.7, 'accuracy': 0.75, 
                                           'recall': 0.6, 'specificity': 0.85, 
                                           'brier': 0.2, 'dcal': 5.0, 'dcal_pvalue': 1}
@@ -95,10 +95,10 @@ class TestPredictBinaryOutcomes(unittest.TestCase):
         mock_pipeline = MagicMock()
         mock_pipeline.predict_proba.return_value = np.array([[0.3, 0.7], [0.2, 0.8], [0.6, 0.4], [0.1, 0.9], [0.4, 0.6]])
         
-        with patch('prediction.predict_binary_outcomes_aligned.Pipeline', return_value=mock_pipeline), \
-             patch('prediction.predict_binary_outcomes_aligned.calculate_metrics') as mock_metrics, \
-             patch('prediction.predict_binary_outcomes_aligned.joblib.dump') as mock_dump, \
-             patch('prediction.predict_binary_outcomes_aligned.Path.mkdir'), \
+        with patch('downstream_prediction.predict_binary_outcomes_aligned.Pipeline', return_value=mock_pipeline), \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.calculate_metrics') as mock_metrics, \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.joblib.dump') as mock_dump, \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.Path.mkdir'), \
              patch('pandas.DataFrame.to_csv'):
                 
             mock_metrics.return_value = {'auc': 0.8, 'ap': 0.7, 'accuracy': 0.75, 
@@ -191,7 +191,7 @@ class TestPredictBinaryOutcomes(unittest.TestCase):
         window = 'two_year'
         label_ids = pl.DataFrame({'ppn_int': list(range(1, 101))}).lazy()
         
-        with patch('prediction.predict_binary_outcomes_aligned.get_embeddings') as mock_get_embeddings, \
+        with patch('downstream_prediction.predict_binary_outcomes_aligned.get_embeddings') as mock_get_embeddings, \
              patch('polars.LazyFrame.join') as mock_join, \
              patch('polars.LazyFrame.sort') as mock_sort, \
              patch('polars.LazyFrame.collect') as mock_collect, \
@@ -225,7 +225,7 @@ class TestPredictBinaryOutcomes(unittest.TestCase):
         config = MagicMock()
         window = 'two_year'
         
-        with patch('prediction.predict_binary_outcomes_aligned.eval_cv_model') as mock_eval_cv_model:
+        with patch('downstream_prediction.predict_binary_outcomes_aligned.eval_cv_model') as mock_eval_cv_model:
             mock_eval_cv_model.return_value = {'metrics': [{'subset': 'full_test', 'task': 'label', 'feature_set': 'baseline', 'model': 'TestModel', 'auc': 0.8}]}
             
             result = pred.perform_cross_validation(
@@ -249,12 +249,12 @@ class TestPredictBinaryOutcomes(unittest.TestCase):
         # Rather than testing exact behavior
         with patch('argparse.ArgumentParser.parse_args') as mock_args, \
              patch('utils.predict_utils.load_config') as mock_load_config, \
-             patch('prediction.predict_binary_outcomes_aligned.get_models') as mock_get_models, \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.get_models') as mock_get_models, \
              patch('polars.scan_parquet') as mock_scan_parquet, \
-             patch('prediction.predict_binary_outcomes_aligned.process_embeddings') as mock_process_embeddings, \
-             patch('prediction.predict_binary_outcomes_aligned.add_diagnosis_codes') as mock_add_diagnosis_codes, \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.process_embeddings') as mock_process_embeddings, \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.add_diagnosis_codes') as mock_add_diagnosis_codes, \
              patch('utils.predict_utils.build_subsets') as mock_build_subsets, \
-             patch('prediction.predict_binary_outcomes_aligned.perform_cross_validation') as mock_perform_cv, \
+             patch('downstream_prediction.predict_binary_outcomes_aligned.perform_cross_validation') as mock_perform_cv, \
              patch('utils.predict_utils.format_results') as mock_format_results, \
              patch('utils.predict_utils.save_results') as mock_save_results, \
              patch('utils.predict_utils.threshold_label', return_value=self.sample_label), \

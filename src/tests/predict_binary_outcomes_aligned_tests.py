@@ -3,7 +3,7 @@ import polars as pl
 import sklearn
 
 # Import the functions you want to test from predict_binary_outcomes_aligned.py
-from prediction.predict_binary_outcomes_aligned import (
+from downstream_prediction.predict_binary_outcomes_aligned import (
     eval_cv_model,
     get_embeddings,
 )
@@ -14,7 +14,7 @@ from utils.predict_utils import threshold_label
 # import os
 # import sys
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# from prediction.predict_binary_outcomes_aligned import ...
+# from downstream_prediction.predict_binary_outcomes_aligned import ...
 
 import unittest
 from unittest.mock import patch, MagicMock
