@@ -1,0 +1,34 @@
+seed: 123
+test_size: null
+windows: 
+  - six_months
+  #- one_year
+tasks:
+  episode_count:
+    train: temporal_episode_count_six_months_train.parquet
+    test: temporal_episode_count_six_months_test.parquet
+  length_of_stay:
+    train: temporal_length_of_stay_six_months_train.parquet
+    test: temporal_length_of_stay_six_months_test.parquet
+  cost:
+    train: temporal_cost_six_months_train.parquet
+    test: temporal_cost_six_months_test.parquet
+#tasks_path: '/mnt/fast_drive/h_drive/study1_files'
+tasks_path: '/mnt/data_volume/apdc/study1/preprocessed/tasks'
+#result_fout_format: '{window}_results_binary_{high}_strat_debug.csv'
+#result_fout_format: '{task}_results_binary_{high}_embed_test_gbt.csv'
+#result_fout_format: '{task}_results_binary_{high}_embed_test_40k.csv'
+#result_fout_format: '{task}_results_binary_heldout_20k.csv'
+result_fout_format: '{task}_six_months_temporal_bootstrap_test_set.csv'
+run_label: 'diagnosis_dup'
+label_path_nt: 'H:/aws_mnt/study1_files/'
+baseline: 
+  #path: '/mnt/fast_drive/h_drive/study1_files'
+  path: '/mnt/data_volume/apdc/study1/preprocessed/tasks'
+  train: 'temporal_baseline_features_six_months_train.parquet'
+  test: 'temporal_baseline_features_six_months_test.parquet'
+halo_embeddings: 
+  #path: '/mnt/fast_drive/h_drive/study1_files'
+  path: '/mnt/data_volume/apdc/study1/preprocessed/tasks'
+  train: 'temporal_downstream_train_random_index_six_months_embeddings.parquet'
+  test: 'temporal_downstream_test_random_index_six_months_embeddings.parquet'
