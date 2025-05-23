@@ -1,0 +1,91 @@
+defaults:
+  - dataset_base
+  - _self_
+
+do_overwrite: True
+
+cohort_name: "study1"
+subject_id_col: "ppn_int"
+streaming: True
+
+PROJECT_DIR: "/mnt/data_volume/pyscripts/apdc_gpt"
+DATA_DIR: "/mnt/data_volume/apdc/study1/preprocessed"
+# inputs
+
+
+inputs:
+  subjects: 
+    input_df: '${DATA_DIR}/full_cohort_static.parquet'
+  admissions: 
+    input_df: '${DATA_DIR}/full_cohort.parquet'
+    ts_col: "episode_start_date"
+  procedure:
+    input_df: '${DATA_DIR}/full_cohort_procedure_block.parquet'
+    ts_col: "episode_start_date"
+
+measurements:
+  static:
+    multi_label_classification:
+      subjects: ['sex']
+  dynamic:
+    multi_label_classification:
+      admissions:
+        - hospital_type
+        - emergency_status_recode
+        - episode_of_care_type
+        # discharge on leave, transferred, etc., 0-11
+        - mode_of_separation_recode
+        - peer_group
+        - facility_type
+        - facility_identifier
+        - facility_trans_from_e
+        - facility_trans_to_e
+        # outpatients, palliative care, etc., 01-13
+        - referred_to_on_separation_recode
+        - acute_flag
+        - ed_status
+        # born in hospital, emergency department, etc., 00-16
+        - source_of_referral_recode
+        #---------------------
+        # ed
+        # review in ed, home nursing, outpatient clinic, specialist, etc. 01-12
+        - referred_to_on_departure_recode
+        - ed_visit_type
+        - triage_category
+        # ambulance, public transport, private vehicle, etc., 1-11
+        - mode_of_arrival
+        - mode_of_separation
+        # family, specialist, outpatient clinic, etc 1-19,99
+        - ed_source_of_referral
+
+      procedure:
+        - procedure_block
+    univariate_regression:
+      admissions:
+        - length_of_stay
+  functional_time_dependent:
+    age:
+      functor: AgeFunctor
+      necessary_static_measurements: {'mthyr_birth': ["timestamp","%b%Y"] }
+      kwargs:
+        dob_col: 'mthyr_birth'
+
+
+save_dir: ${DATA_DIR}/esgpt_data_testi/${cohort_name}
+seed: 1
+split: [0.8, 0.1, 0.1]
+DL_chunk_size: 20000
+min_valid_vocab_element_observations: 10
+min_valid_column_observations: 10
+min_true_float_frequency: 0.1
+min_unique_numerical_observations: 10
+min_events_per_subject: null
+agg_by_time_scale: null
+
+hydra:
+  job:
+    name: build_${cohort_name}
+  run:
+    dir: ${save_dir}/.logs
+  sweep:
+    dir: ${save_dir}/.logs

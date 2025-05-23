@@ -1,0 +1,63 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+experiment_dir: '/mnt/fast_drive/experiment/study1'
+
+do_use_filesystem_sharing: True
+
+#checkpoint: '${experiment_dir}/pretrain/2024-08-05_13-58-58/lightning_logs/last-epoch=3-step=149436-tuning_loss=16.24.ckpt'
+#checkpoint: '${experiment_dir}/pretrain/2025-01-22_01-41-23/lightning_logs/epoch=11-step=448308-tuning_loss=15.91.ckpt'
+
+data_config:
+  #train_subset_seed: 1
+  #train_subset_size: 0.01
+  save_dir: '/mnt/data_volume/apdc/study1/preprocessed/esgpt_data/study1'
+
+
+config: 
+  #structured_event_processing_mode: 'nested_attention'
+  do_full_block_in_seq_attention: False
+  do_full_block_in_dep_graph_attention: False
+  do_use_learnable_sinusoidal_ATE: True
+  TTE_generation_layer_type: 'log_normal_mixture'
+  TTE_lognormal_generation_num_components: 12
+  num_attention_heads: 6
+  num_hidden_layers: 6
+  max_seq_len: 100
+  seq_window_size: 4
+
+
+optimization_config:
+  max_epochs: 50
+  num_dataloader_workers: 3
+  batch_size: 128
+  validation_batch_size: 128
+  # this is added by me
+  pin_memory: False
+  train_shuffle: True
+  patience: 10
+  lr_frac_warmup_steps: 0.05
+  #lr_num_warmup_steps: 20000
+  #init_lr: 0.0001
+  #init_lr: 0.00005
+  init_lr: 0.0005
+  #init_lr: 0.00005
+  end_lr: null
+  lr_scheduler: false
+  #gradient_accumulation: 2
+
+trainer_config:
+  precision: "bf16-mixed"
+  #limit_val_batches: 0.05
+  #limit_test_batches: 0.05
+
+wandb_logger_kwargs: 
+  name: null
+
+checkpoint_config:
+  save_top_k: 1
+
+mlflow_logger:
+  experiment_name: 'study1'
+  run_name: 'study1'

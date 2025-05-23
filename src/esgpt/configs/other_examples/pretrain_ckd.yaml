@@ -1,0 +1,65 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+#main_path: 'H:\\pyscripts\apdc_gpt'
+#cohort: 'apdc'
+
+experiment_dir: '/mnt/fast_drive/experiment/pretrain_ckd_10_90_minevents10'
+
+do_use_filesystem_sharing: True
+
+data_config:
+  #train_subset_size: 0.2
+  train_subset_seed: 1
+  save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc_10_90_minevents10'
+  #save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc'
+
+optimization_config:
+  max_epochs: 150
+  num_dataloader_workers: 4
+  batch_size: 128
+  validation_batch_size: 32
+  # this is added by me
+  pin_memory: False
+  train_shuffle: True
+  #lr_frac_warmup_steps: null
+  lr_frac_warmup_steps: 0.30
+  #lr_num_warmup_steps: null
+  patience: 30
+  init_lr: 0.005
+  #lr_scheduler: false
+  #lr_decay_power: 1.0
+  #weight_decay: 0.01
+  end_lr: null
+
+trainer_config:
+  precision: 32
+  #limit_val_batches: 0.5
+  #limit_test_batches: 0.5
+  #val_check_interval: 2
+    #  strategy: 'deepspeed_stage_3_offload'
+  #  devices: 2
+#  accelerator: 'cpu'
+
+wandb_logger_kwargs:
+  name: null
+
+#wandb_logger_kwargs:
+#  log_model: 'all'
+  # this didn't do much
+  #checkpoint_name: 'jck'
+
+checkpoint_config:
+  save_top_k: 2
+
+#config: 
+#  num_attention_heads: 2
+#  numerical_embedding_dim: 32
+#  categorical_embedding_dim: 32
+#  head_dim: 16
+#  hidden_size: null
+#  
+
+mlflow_logger:
+  run_name: 'ckd_cosine_lr_longerwarmup_minev10'

@@ -1,0 +1,31 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+#main_path: 'H:\\pyscripts\apdc_gpt'
+#cohort: 'apdc'
+
+experiment_dir: '/mnt/fast_drive/experiment/pretrain_noproc_25'
+
+data_config:
+  train_subset_size: 0.3
+  save_dir: '/mnt/fast_drive/data/apdc_noproc_25'
+
+optimization_config:
+  max_epochs: 10
+  num_dataloader_workers: 4
+  batch_size: 640
+  validation_batch_size: 640
+#trainer_config:
+    #  strategy: 'deepspeed_stage_3_offload'
+    #  precision: 16
+  #  devices: 2
+#  accelerator: 'cpu'
+
+#config: 
+#  num_attention_heads: 2
+#  numerical_embedding_dim: 32
+#  categorical_embedding_dim: 32
+#  head_dim: 16
+#  hidden_size: null
+#  

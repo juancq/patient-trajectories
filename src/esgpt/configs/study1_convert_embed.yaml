@@ -1,0 +1,38 @@
+
+defaults:
+  - pretrain_config
+  - _self_
+
+#task_df_name: null
+do_overwrite: True
+
+seed: 1
+
+experiment_dir: '/mnt/fast_drive/experiment/study1/'
+# prior to Jan 2025
+#load_from_model_dir: '${experiment_dir}/pretrain/2024-08-14_14-11-29'
+load_from_model_dir: '${experiment_dir}/pretrain/2025-01-24_05-22-54'
+
+
+load_from_checkpoint: null
+
+
+data_config:
+  #task_df_name: 'study1_six_months'
+  #task_df_name: 'study1_six_months'
+  #task_df_name: 'study1_one_year'
+  task_df_name: 'study1_two_year'
+  min_seq_len: 1
+  #max_seq_len: 1
+  save_dir: '/mnt/data_volume/apdc/study1/preprocessed/esgpt_data/study1'
+  do_include_subject_id: True
+  #train_subset_size: 0.1
+
+optimization_config:
+  validation_batch_size: 256
+  num_dataloader_workers: 4
+
+config: 
+  #max_seq_len: 1
+  task_specific_params: 
+    pooling_method: 'mean' #max, mean, none, last

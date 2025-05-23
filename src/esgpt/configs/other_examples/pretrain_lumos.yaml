@@ -1,0 +1,90 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+experiment_dir: '/mnt/fast_drive/experiment/lumos'
+
+do_use_filesystem_sharing: True
+
+data_config:
+  #train_subset_seed: 1
+  train_subset_size: 0.5
+  save_dir: '/mnt/data_volume/apdc/lumos/esgpt_data_test/lumos'
+
+
+config: 
+  structured_event_processing_mode: 'nested_attention'
+  do_full_block_in_seq_attention: False
+  do_full_block_in_dep_graph_attention: False
+  do_use_learnable_sinusoidal_ATE: True
+  TTE_generation_layer_type: 'log_normal_mixture'
+  TTE_lognormal_generation_num_components: 6
+  #num_attention_heads: 12
+  #num_hidden_layers: 6
+  measurements_per_dep_graph_level:
+    - [age, stay_number]
+    - [event_type]
+    - [
+        hospital_type,
+        FACILITY_TYPE, #1
+      ]
+    - [
+        MODE_OF_ARRIVAL,
+        ED_VISIT_TYPE,
+        ACUTE_FLAG,
+        EPISODE_OF_CARE_TYPE,
+      ]
+    - [procedure_block]
+    - [
+       totlos,
+       num_seps
+       ]
+    - [
+        MODE_OF_SEPARATION,
+      ]
+
+
+optimization_config:
+  max_epochs: 50
+  num_dataloader_workers: 4
+  #batch_size: 256
+  batch_size: 32
+  validation_batch_size: 32
+  # this is added by me
+  pin_memory: False
+  train_shuffle: True
+  #lr_frac_warmup_steps: null
+  #lr_num_warmup_steps: null
+  patience: 10
+  lr_frac_warmup_steps: 0.15
+  init_lr: 0.0005
+  #init_lr: 0.0001
+  #lr_scheduler: false
+  #lr_decay_power: 1.0
+  #weight_decay: 0.01
+  end_lr: null
+  cosine_scheduler_cycles: 2
+  gradient_accumulation: 8
+
+trainer_config:
+  precision: 32
+  limit_val_batches: 0.5
+  limit_test_batches: 0.5
+  #val_check_interval: 2
+    #  strategy: 'deepspeed_stage_3_offload'
+  #devices: 3
+  #accelerator: 'cpu'
+
+wandb_logger_kwargs: 
+  name: null
+#  log_model: 'all'
+  # this didn't do much
+  #checkpoint_name: 'jck'
+
+checkpoint_config:
+  save_top_k: 2
+
+mlflow_logger:
+  experiment_name: 'lumos'
+  run_name: 'faster_warmup'
+

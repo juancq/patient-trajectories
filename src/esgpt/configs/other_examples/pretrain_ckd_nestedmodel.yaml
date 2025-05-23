@@ -1,0 +1,116 @@
+defaults:
+  - pretrain_config
+  ##- parameters: wandb_logger_kwargs: 
+  #- pretraining: wandb_logger_kwargs
+  - _self_
+
+#main_path: 'H:\\pyscripts\apdc_gpt'
+#cohort: 'apdc'
+
+#experiment_dir: '/mnt/fast_drive/experiment/pretrain_ckd_nested'
+experiment_dir: '/mnt/fast_drive/experiment/pretrain_ckd_nested_10_90_clean_delete'
+
+do_use_filesystem_sharing: True
+#checkpoint: '${experiment_dir}/pretrain/2023-11-17_13-51-24/lightning_logs/last-epoch=58-step=30149-tuning_loss=16.26.ckpt'
+
+
+data_config:
+  #train_subset_size: 0.2
+  train_subset_seed: 1
+  save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc_10_90_clean'
+  #save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc_10_90_minevents10'
+  #save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc_10_90'
+  #save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc'
+
+config: 
+  structured_event_processing_mode: 'nested_attention'
+  do_full_block_in_seq_attention: True
+  do_full_block_in_dep_graph_attention: False
+  measurements_per_dep_graph_level:
+    - [age]
+    - [event_type]
+    - [
+        hospital_type,
+        FACILITY_TYPE, #1
+      ]
+    - [
+        MODE_OF_ARRIVAL,
+        PEER_GROUP,
+        TRIAGE_CATEGORY,
+        ED_VISIT_TYPE,
+        ACUTE_FLAG,
+        EPISODE_OF_CARE_TYPE,
+      ]
+    - [procedure]
+    - [
+        MODE_OF_SEPARATION,
+      ]
+
+#    - - 'age'
+#      - ['event_type']
+#      - [
+#          hospital_type,
+#          FACILITY_TYPE, #1
+#        #- FACILITY_TYPE #2
+#        ]
+#      - [
+#          MODE_OF_ARRIVAL,
+#          PEER_GROUP,
+#          TRIAGE_CATEGORY,
+#          ED_VISIT_TYPE,
+#          ACUTE_FLAG,
+#          EPISODE_OF_CARE_TYPE,
+#        ]
+#      - [procedure_codeP]
+#      - [
+#          EPISODE_LENGTH_OF_STAY,
+#          MODE_OF_SEPARATION,
+#        ]
+#
+
+optimization_config:
+  max_epochs: 150
+  num_dataloader_workers: 4
+  batch_size: 128
+  validation_batch_size: 32
+  # this is added by me
+  pin_memory: False
+  train_shuffle: True
+  #lr_frac_warmup_steps: null
+  lr_frac_warmup_steps: 0.30
+  #lr_num_warmup_steps: null
+  patience: 30
+  init_lr: 0.005
+  #lr_scheduler: false
+  #lr_decay_power: 1.0
+  #weight_decay: 0.01
+  end_lr: null
+
+trainer_config:
+  precision: 32
+  limit_val_batches: 0.5
+  limit_test_batches: 0.5
+  #val_check_interval: 2
+    #  strategy: 'deepspeed_stage_3_offload'
+  #devices: 3
+  #accelerator: 'cpu'
+
+wandb_logger_kwargs: 
+  name: null
+#  log_model: 'all'
+  # this didn't do much
+  #checkpoint_name: 'jck'
+
+checkpoint_config:
+  save_top_k: 2
+
+mlflow_logger:
+  run_name: 'nested_ckd_clean'
+
+#config: 
+#  num_attention_heads: 2
+#  numerical_embedding_dim: 32
+#  categorical_embedding_dim: 32
+#  head_dim: 16
+#  hidden_size: null
+#  

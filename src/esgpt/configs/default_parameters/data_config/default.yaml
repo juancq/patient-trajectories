@@ -1,0 +1,12 @@
+save_dir:
+  value: ???
+max_seq_len:
+  min: 16
+  max: 512
+min_seq_len:
+  min: 2
+  max: 16
+train_subset_size:
+  value: FULL
+train_subset_seed:
+  value: 1

@@ -1,0 +1,70 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+#experiment_dir: '/mnt/fast_drive/experiment/predeath_procedure_new_ext_apdc'
+experiment_dir: '/mnt/fast_drive/experiment/predeath_procedure_new_ext'
+
+do_use_filesystem_sharing: True
+
+
+data_config:
+  #train_subset_seed: 1
+  train_subset_size: 0.2
+  save_dir: '/mnt/data_volume/apdc/esgpt_data_test/predeath5yr_procedure_new_ext'
+
+config: 
+  structured_event_processing_mode: 'nested_attention'
+  do_full_block_in_seq_attention: False
+  do_full_block_in_dep_graph_attention: False
+  #num_attention_heads: 12
+  #num_hidden_layers: 6
+
+  measurements_per_dep_graph_level:
+    - [age, SEX]
+    - [event_type]
+    - [procedure_block, stay_number, totlos]
+
+
+optimization_config:
+  max_epochs: 50
+  num_dataloader_workers: 4
+  batch_size: 256
+  validation_batch_size: 64
+  # this is added by me
+  pin_memory: False
+  train_shuffle: True
+  #lr_frac_warmup_steps: null
+  lr_frac_warmup_steps: 0.15
+  #lr_frac_warmup_steps: 0.30
+  #lr_num_warmup_steps: null
+  patience: 20
+  init_lr: 0.00015
+  #lr_scheduler: false
+  #lr_decay_power: 1.0
+  #weight_decay: 0.01
+  end_lr: null
+  cosine_scheduler_cycles: 1
+
+trainer_config:
+  precision: 32
+  limit_val_batches: 0.5
+  limit_test_batches: 0.5
+  #val_check_interval: 2
+    #  strategy: 'deepspeed_stage_3_offload'
+  #devices: 3
+  #accelerator: 'cpu'
+
+wandb_logger_kwargs: 
+  name: null
+#  log_model: 'all'
+  # this didn't do much
+  #checkpoint_name: 'jck'
+
+checkpoint_config:
+  save_top_k: 2
+
+mlflow_logger:
+  experiment_name: 'basic'
+  run_name: 'ragged_test'
+

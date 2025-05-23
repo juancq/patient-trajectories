@@ -1,0 +1,68 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+experiment_dir: '/mnt/fast_drive/experiment/lumos_halo'
+
+do_use_filesystem_sharing: True
+
+data_config:
+  #train_subset_seed: 1
+  train_subset_size: 0.2
+  #max_seq_len: 512
+  max_seq_len: 48
+  save_dir: '/mnt/data_volume/apdc/lumos/esgpt_data_test/lumos'
+
+
+config: 
+  do_full_block_in_seq_attention: False
+  do_full_block_in_dep_graph_attention: False
+  do_use_learnable_sinusoidal_ATE: True
+  TTE_generation_layer_type: 'log_normal_mixture'
+  TTE_lognormal_generation_num_components: 6
+  max_seq_len: 48
+  #max_seq_len: 512
+  num_attention_heads: 12
+  num_hidden_layers: 6
+  do_split_embeddings: true
+  categorical_embedding_dim: 384
+  numerical_embedding_dim: 384
+
+
+optimization_config:
+  max_epochs: 50
+  num_dataloader_workers: 4
+  #batch_size: 256
+  batch_size: 48
+  validation_batch_size: 48
+  # this is added by me
+  pin_memory: False
+  train_shuffle: True
+  init_lr: 0.0001
+  end_lr: null
+  lr_scheduler: false
+  gradient_accumulation: null
+  patience: null
+
+trainer_config:
+  precision: 32
+  limit_val_batches: 0.5
+  limit_test_batches: 0.5
+  #val_check_interval: 2
+    #  strategy: 'deepspeed_stage_3_offload'
+  #devices: 3
+  #accelerator: 'cpu'
+
+wandb_logger_kwargs: 
+  name: null
+#  log_model: 'all'
+  # this didn't do much
+  #checkpoint_name: 'jck'
+
+checkpoint_config:
+  save_top_k: 2
+
+mlflow_logger:
+  experiment_name: 'lumos'
+  run_name: 'like_halo'
+

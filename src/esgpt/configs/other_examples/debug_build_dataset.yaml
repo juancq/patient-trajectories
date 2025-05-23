@@ -1,0 +1,81 @@
+defaults:
+  - dataset_base
+  - _self_
+
+do_overwrite: True
+
+cohort_name: "apdc_primary_procedure_2"
+subject_id_col: "ppn_int"
+streaming: True
+
+PROJECT_DIR: "/mnt/data_volume/pyscripts/apdc_gpt"
+DATA_DIR: "/mnt/fast_drive/apdc"
+# inputs
+
+
+inputs:
+  subjects: 
+    input_df: '${DATA_DIR}/static_2.parquet'
+  admissions: 
+    input_df: '${DATA_DIR}/apdc_2.parquet'
+    start_ts_col: "episode_start_date"
+    end_ts_col: "episode_end_date"
+    ts_format: "%m/%d/%Y"
+    event_type: ["ADMISSION", "ADMISSION", "DISCHARGE"]
+  emergency: 
+    input_df: '${DATA_DIR}/eddc_2.parquet'
+    start_ts_col: "arrival_date"
+    end_ts_col: "actual_departure_date"
+    ts_format: "%m/%d/%Y"
+    event_type: ["ED", "ED", "ED_DISCHARGE"]
+
+measurements:
+  static:
+    multi_label_classification:
+      subjects: ['SEX']
+  dynamic:
+    multi_label_classification:
+      admissions:
+        - hospital_type
+        - FACILITY_TYPE
+        - ACUTE_FLAG
+        - EPISODE_OF_CARE_TYPE
+        - procedure_codeP
+      emergency:
+        - FACILITY_TYPE
+        - PEER_GROUP
+        - TRIAGE_CATEGORY
+        - ED_VISIT_TYPE
+        - MODE_OF_ARRIVAL
+        - MODE_OF_SEPARATION
+    univariate_regression:
+      admissions:
+        - EPISODE_LENGTH_OF_STAY
+  functional_time_dependent:
+    age:
+      functor: AgeFunctor
+      necessary_static_measurements: {'MTHYR_BIRTH': ["timestamp","%b%Y"] }
+      kwargs:
+        dob_col: 'MTHYR_BIRTH'
+
+
+#save_dir: ${oc.env:PROJECT_DIR}/data/${cohort_name}
+save_dir: ${DATA_DIR}/esgpt_data_test/${cohort_name}
+seed: 1
+split: [0.8, 0.1, 0.1]
+DL_chunk_size: 20000
+min_valid_vocab_element_observations: 10
+min_valid_column_observations: 10
+min_true_float_frequency: 0.1
+min_unique_numerical_observations: 10
+#min_events_per_subject: null
+min_events_per_subject: 3
+agg_by_time_scale: null
+
+hydra:
+  job:
+    name: build_${cohort_name}
+  run:
+    dir: ${save_dir}/.logs
+  sweep:
+    dir: ${save_dir}/.logs

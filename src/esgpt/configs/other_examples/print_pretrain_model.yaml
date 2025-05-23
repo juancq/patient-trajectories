@@ -1,0 +1,11 @@
+defaults:
+  - pretrain_config
+  - _self_
+
+
+data_config:
+  #train_subset_size: 0.2
+  train_subset_seed: 1
+  save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc_10_90'
+  #save_dir: '/mnt/fast_drive/apdc/esgpt_data_test/ckd_vs_control_proc'
+
